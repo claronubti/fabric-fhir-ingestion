@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Environment",
+    "displayName": "ENV_FHIR",
+    "description": "Environment"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "dc7fd13c-0d0a-ae8a-4a7a-05da02a2f9e8"
+  }
+}
