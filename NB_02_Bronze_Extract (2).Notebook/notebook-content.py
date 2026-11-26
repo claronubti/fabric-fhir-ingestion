@@ -5,6 +5,18 @@
 # META {
 # META   "kernel_info": {
 # META     "name": "synapse_pyspark"
+# META   },
+# META   "dependencies": {
+# META     "lakehouse": {
+# META       "default_lakehouse": "0456ac56-a7ba-4510-9e2a-444dd1c79bfa",
+# META       "default_lakehouse_name": "LH_Bronze",
+# META       "default_lakehouse_workspace_id": "847d5f42-a587-45f9-9bde-e28a77942f74",
+# META       "known_lakehouses": [
+# META         {
+# META           "id": "0456ac56-a7ba-4510-9e2a-444dd1c79bfa"
+# META         }
+# META       ]
+# META     }
 # META   }
 # META }
 
@@ -32,9 +44,23 @@ load_type       = ""        # blank = use ctl_resource_config.load_type; or FULL
 max_pages       = 5         # 0 = no cap (use 0 in Prod). Keep small in Dev.
 
 
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
 # CELL ********************
 
 %run NB_Common_Utils
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
 
 # CELL ********************
 
@@ -63,6 +89,13 @@ BRONZE_SCHEMA = StructType([
     StructField("source_url",  StringType(),    True),
 ])
 FLUSH_EVERY = 5000
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
 
 # CELL ********************
 
@@ -115,6 +148,13 @@ def extract():
 result = run_step("BRONZE", cfg, run_id, pipeline_run_id, extract)
 log.info("Bronze done: %s", {k: (str(v) if k == "max_lu" else v) for k, v in result.items()})
 
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
 # CELL ********************
 
 # Return values to the pipeline (the watermark is NOT updated here)
@@ -126,3 +166,10 @@ notebookutils.notebook.exit(json.dumps({
     "pages": result["pages"],
     "max_lastUpdated": max_lu_str,
 }))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
