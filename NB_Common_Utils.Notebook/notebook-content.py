@@ -65,6 +65,13 @@ def to_fhir_param(dt):
     """naive UTC datetime -> FHIR search value, e.g. 2026-11-25T05:49:17.579Z"""
     return dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
 # CELL ********************
 
 # ---- warehouse access via the Spark connector ----
@@ -99,6 +106,13 @@ def latest_watermarks():
     """Current watermark per config_id = the row with the newest updated_at."""
     w = Window.partitionBy("config_id").orderBy(F.col("updated_at").desc())
     return read_meta("ctl_watermark").withColumn("_rn", F.row_number().over(w)).where("_rn = 1").drop("_rn")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
 
 # CELL ********************
 
@@ -137,6 +151,13 @@ def paginate(url, params=None, max_pages=None):
             log.info("Stopped at max_pages=%d", max_pages)
             break
         url = next((l["url"] for l in bundle.get("link", []) if l.get("relation") == "next"), None)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
 
 # CELL ********************
 
@@ -185,6 +206,13 @@ def run_step(layer, config, run_id, pipeline_run_id, fn):
 
 log.info("NB_Common_Utils loaded")
 
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
 # MARKDOWN ********************
 
 # ## Quick test (optional)
@@ -195,3 +223,10 @@ log.info("NB_Common_Utils loaded")
 # pages = [len(b.get("entry", [])) for _, b in paginate("https://hapi.fhir.org/baseR4/Patient", {"_count": 5}, max_pages=2)]
 # print("entries per page:", pages)
 # c = get_config("Patient"); print(c["silver_table"], get_watermark(c["config_id"]))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }

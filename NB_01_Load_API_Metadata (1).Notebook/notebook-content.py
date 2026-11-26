@@ -25,9 +25,23 @@
 source_id = 1
 
 
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
 # CELL ********************
 
 %run NB_Common_Utils
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
 
 # CELL ********************
 
@@ -45,6 +59,13 @@ SELECTED = {
 PRIMARY_KEY        = "id"
 INCREMENTAL_COLUMN = "meta.lastUpdated"
 INCREMENTAL_PARAM  = "_lastUpdated"
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
 
 # CELL ********************
 
@@ -80,6 +101,13 @@ for name, opts in SELECTED.items():
     log.info("%s OK: %d search params, interactions %s", name, len(info["search_params"]), info["interactions"])
 if not valid:
     raise RuntimeError("No valid resources to load.")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
 
 # CELL ********************
 
@@ -135,6 +163,13 @@ if seed:
     write_meta(spark.createDataFrame(seed, WATERMARK_SCHEMA), "ctl_watermark")
 log.info("Watermarks seeded for %d config(s)", len(seed))
 
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
 # CELL ********************
 
 # 5. Verify
@@ -146,3 +181,10 @@ display(latest_watermarks().orderBy("config_id"))
 display(spark.createDataFrame([(k, ", ".join(v["interactions"]), len(v["search_params"])) for k, v in valid.items()],
                               ["resource", "interactions", "search_param_count"]))
 assert cfg.count() >= len(valid), "Fewer config rows than selected resources"
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
