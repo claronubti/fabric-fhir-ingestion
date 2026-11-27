@@ -1,0 +1,565 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "DataWarehouseSource",
+            "sqlReaderQuery": "SELECT config_id, resource_name, load_order, is_critical\nFROM dbo.ctl_resource_config WHERE is_active = 1 ORDER BY load_order",
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "DataWarehouseTable",
+            "schema": [],
+            "linkedService": {
+              "name": "WH_Metadata",
+              "properties": {
+                "type": "DataWarehouse",
+                "typeProperties": {
+                  "artifactId": "aec5b9ba-e87a-80b1-42fb-1f962a5c134f",
+                  "endpoint": "2ybikadzh7yenkzxsnkoh7ua74-ijpx3behux4ulg664kfhpfbpoq.datawarehouse.fabric.microsoft.com",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": false
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "LK_ActiveResources",
+        "dependsOn": []
+      },
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "isSequential": true,
+          "items": {
+            "value": "@activity('LK_ActiveResources').output.value",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "TridentNotebook",
+              "typeProperties": {
+                "notebookId": "7eb71f4d-86e1-8b97-4e50-b9aefad97d11",
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "parameters": {
+                  "resource_name": {
+                    "value": {
+                      "value": "@item().resource_name",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "run_id": {
+                    "value": {
+                      "value": "@pipeline().RunId",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "pipeline_run_id": {
+                    "value": {
+                      "value": "@pipeline().RunId",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "load_type": {
+                    "value": {
+                      "value": "@if(equals(pipeline().parameters.full_refresh_resource, item().resource_name), 'FULL', pipeline().parameters.load_type)",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "max_pages": {
+                    "value": {
+                      "value": "@pipeline().parameters.max_pages",
+                      "type": "Expression"
+                    },
+                    "type": "int"
+                  }
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "NB_02_Bronze_Extract",
+              "dependsOn": []
+            },
+            {
+              "type": "TridentNotebook",
+              "typeProperties": {
+                "notebookId": "96f7712a-1f04-8a84-451d-a9d570b7e7e3",
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "parameters": {
+                  "resource_name": {
+                    "value": {
+                      "value": "@item().resource_name",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "run_id": {
+                    "value": {
+                      "value": "@pipeline().RunId",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "pipeline_run_id": {
+                    "value": {
+                      "value": "@pipeline().RunId",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "on_type_change": {
+                    "value": "WARN",
+                    "type": "string"
+                  },
+                  "on_new_column": {
+                    "value": "AUTO_ADD",
+                    "type": "string"
+                  },
+                  "sample_size": {
+                    "value": "2000",
+                    "type": "int"
+                  },
+                  "persist_dropped": {
+                    "value": false,
+                    "type": "bool"
+                  },
+                  "bronze_lakehouse": {
+                    "value": "LH_Bronze",
+                    "type": "string"
+                  }
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "NB_04_Schema_Evaluation",
+              "dependsOn": [
+                {
+                  "activity": "NB_02_Bronze_Extract",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "TridentNotebook",
+              "typeProperties": {
+                "notebookId": "0c005c4e-a3db-a0fe-4c2e-d582ea7c2289",
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "parameters": {
+                  "resource_name": {
+                    "value": {
+                      "value": "@item().resource_name",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "run_id": {
+                    "value": {
+                      "value": "@pipeline().RunId",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "pipeline_run_id": {
+                    "value": {
+                      "value": "@pipeline().RunId",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "max_lastUpdated": {
+                    "value": {
+                      "value": "@coalesce(json(activity('NB_02_Bronze_Extract').output.result.exitValue).max_lastUpdated, '')",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "bronze_lakehouse": {
+                    "value": "LH_Bronze",
+                    "type": "string"
+                  },
+                  "silver_lakehouse": {
+                    "value": "LH_Silver",
+                    "type": "string"
+                  }
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "NB_03_Silver_Transform",
+              "dependsOn": [
+                {
+                  "activity": "NB_04_Schema_Evaluation",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "name": "FE_Resources",
+        "dependsOn": [
+          {
+            "activity": "LK_ActiveResources",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "DataWarehouseSource",
+            "sqlReaderQuery": {
+              "value": "SELECT COUNT(*) AS n\nFROM dbo.ctl_run_log l\nJOIN dbo.ctl_resource_config c ON c.config_id = l.config_id\nWHERE l.pipeline_run_id = '@{pipeline().RunId}' AND l.status = 'FAILED' AND c.is_critical = 1",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "DataWarehouseTable",
+            "schema": [],
+            "linkedService": {
+              "name": "WH_Metadata",
+              "properties": {
+                "type": "DataWarehouse",
+                "typeProperties": {
+                  "artifactId": "aec5b9ba-e87a-80b1-42fb-1f962a5c134f",
+                  "endpoint": "2ybikadzh7yenkzxsnkoh7ua74-ijpx3behux4ulg664kfhpfbpoq.datawarehouse.fabric.microsoft.com",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "LK_CriticalFailures",
+        "dependsOn": [
+          {
+            "activity": "FE_Resources",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "IfCondition",
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(int(activity('LK_CriticalFailures').output.firstRow.n), 0)",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "type": "SqlServerStoredProcedure",
+              "typeProperties": {
+                "storedProcedureName": "[dbo].[usp_Gold_Master]"
+              },
+              "linkedService": {
+                "name": "WH_Gold",
+                "properties": {
+                  "type": "DataWarehouse",
+                  "typeProperties": {
+                    "artifactId": "eea647e1-bf68-b6b0-4c09-928932691c4a",
+                    "endpoint": "2ybikadzh7yenkzxsnkoh7ua74-ijpx3behux4ulg664kfhpfbpoq.datawarehouse.fabric.microsoft.com",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000"
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "SP_Gold_Master",
+              "dependsOn": []
+            },
+            {
+              "type": "Script",
+              "typeProperties": {
+                "scripts": [
+                  {
+                    "text": {
+                      "value": "INSERT INTO dbo.ctl_run_log (run_id, pipeline_run_id, config_id, layer, status, rows_read, rows_written, start_time, end_time, error_message) VALUES ('@{pipeline().RunId}', '@{pipeline().RunId}', 0, 'GOLD', 'SUCCESS', 0, 0, SYSUTCDATETIME(), SYSUTCDATETIME(), NULL)",
+                      "type": "Expression"
+                    },
+                    "type": "NonQuery"
+                  }
+                ],
+                "scriptBlockExecutionTimeout": "02:00:00"
+              },
+              "linkedService": {
+                "name": "WH_Metadata",
+                "properties": {
+                  "type": "DataWarehouse",
+                  "typeProperties": {
+                    "artifactId": "aec5b9ba-e87a-80b1-42fb-1f962a5c134f",
+                    "endpoint": "2ybikadzh7yenkzxsnkoh7ua74-ijpx3behux4ulg664kfhpfbpoq.datawarehouse.fabric.microsoft.com",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000"
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "LOG_Gold_OK",
+              "dependsOn": [
+                {
+                  "activity": "SP_Gold_Master",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Script",
+              "typeProperties": {
+                "scripts": [
+                  {
+                    "text": {
+                      "value": "INSERT INTO dbo.ctl_run_log (run_id, pipeline_run_id, config_id, layer, status, rows_read, rows_written, start_time, end_time, error_message)\nVALUES ('@{pipeline().RunId}', '@{pipeline().RunId}', 0, 'GOLD', 'FAILED', 0, 0, SYSUTCDATETIME(), SYSUTCDATETIME(), LEFT('@{replace(activity('SP_Gold_Master').error.message, '''', '''''')}', 4000))",
+                      "type": "Expression"
+                    },
+                    "type": "NonQuery"
+                  }
+                ],
+                "scriptBlockExecutionTimeout": "02:00:00"
+              },
+              "linkedService": {
+                "name": "WH_Metadata",
+                "properties": {
+                  "type": "DataWarehouse",
+                  "typeProperties": {
+                    "artifactId": "aec5b9ba-e87a-80b1-42fb-1f962a5c134f",
+                    "endpoint": "2ybikadzh7yenkzxsnkoh7ua74-ijpx3behux4ulg664kfhpfbpoq.datawarehouse.fabric.microsoft.com",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000"
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "LOG_Gold_Failed",
+              "dependsOn": [
+                {
+                  "activity": "SP_Gold_Master",
+                  "dependencyConditions": [
+                    "Failed"
+                  ]
+                }
+              ]
+            }
+          ],
+          "ifFalseActivities": []
+        },
+        "name": "IF_NoCriticalFailure",
+        "dependsOn": [
+          {
+            "activity": "LK_CriticalFailures",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "90fc3a1c-d288-9d5a-4766-7f05627915ae",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "run_id": {
+              "value": {
+                "value": "@pipeline().RunId",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "env": {
+              "value": {
+                "value": "@pipeline().parameters.env",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pipeline_name": {
+              "value": {
+                "value": "@pipeline().Pipeline",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "critical_failures": {
+              "value": {
+                "value": "@int(activity('LK_CriticalFailures').output.firstRow.n)",
+                "type": "Expression"
+              },
+              "type": "int"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "NB_07_Monitoring_Alert",
+        "dependsOn": [
+          {
+            "activity": "IF_NoCriticalFailure",
+            "dependencyConditions": [
+              "Completed"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Office365Email",
+        "typeProperties": {
+          "body": "@json(activity('NB_07_Monitoring_Alert').output.result.exitValue).html",
+          "to": {
+            "value": "@pipeline().parameters.alert_to",
+            "type": "Expression"
+          },
+          "subject": {
+            "value": "@json(activity('NB_07_Monitoring_Alert').output.result.exitValue).subject",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "27fee99b-a8e2-4041-8e1f-66821bb642db"
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Office365Email1",
+        "dependsOn": [
+          {
+            "activity": "NB_07_Monitoring_Alert",
+            "dependencyConditions": [
+              "Completed"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "IfCondition",
+        "typeProperties": {
+          "expression": {
+            "value": "@not(equals(json(activity('NB_07_Monitoring_Alert').output.result.exitValue).overall_status, 'SUCCESS'))",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "type": "Fail",
+              "typeProperties": {
+                "message": {
+                  "value": "FHIR load finished with failures. See ctl_run_log for run @{pipeline().RunId}",
+                  "type": "Expression"
+                },
+                "errorCode": "FHIR001"
+              },
+              "name": "FAIL_Run",
+              "dependsOn": []
+            }
+          ],
+          "ifFalseActivities": []
+        },
+        "name": "IF_FailPipeline",
+        "dependsOn": [
+          {
+            "activity": "Office365Email1",
+            "dependencyConditions": [
+              "Completed"
+            ]
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "env": {
+        "type": "string",
+        "defaultValue": "Dev"
+      },
+      "load_type": {
+        "type": "string"
+      },
+      "max_pages": {
+        "type": "int",
+        "defaultValue": 5
+      },
+      "full_refresh_resource": {
+        "type": "string"
+      },
+      "alert_to": {
+        "type": "string",
+        "defaultValue": "claronantonyraj.a@ubtiinc.com"
+      }
+    }
+  }
+}

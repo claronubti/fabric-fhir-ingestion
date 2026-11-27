@@ -37,7 +37,7 @@
 # PARAMETERS CELL ********************
 
 # PARAMETERS
-resource_name   = "Patient"
+resource_name   = ""
 run_id          = ""        # blank = generate one
 pipeline_run_id = ""        # filled by the pipeline
 load_type       = ""        # blank = use ctl_resource_config.load_type; or FULL / INCREMENTAL
